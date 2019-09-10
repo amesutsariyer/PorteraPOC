@@ -33,6 +33,11 @@ namespace PorteraPOC.Web.Controllers
         {
             return View();
         }
+        /// <summary>
+        /// This method generate query string with param
+        /// </summary>
+        /// <param name="param"></param>
+        /// <returns></returns>
         [HttpGet]
         public IActionResult GetSerialWithId(string param)
         {
@@ -60,7 +65,7 @@ namespace PorteraPOC.Web.Controllers
             }
             catch (Exception ex)
             {
-                return Redirect(redirectUrl);
+                return View("Failure", ex.Message);
                 throw ex;
             }
         }
