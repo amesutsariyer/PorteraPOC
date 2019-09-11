@@ -10,9 +10,11 @@ namespace PorteraPOC.Dto
         }
         public PilotDto(string id, string serialNumber)
         {
-            SerialNoWithId = id + serialNumber;
+            SerialNoWithId = serialNumber+id;
+            Id = id;
+            SerialNumber = serialNumber;
         }
- 
+
         public string Id { get; set; }
         public string SerialNumber { get; set; }
         public string SerialNoWithId { get; set; }

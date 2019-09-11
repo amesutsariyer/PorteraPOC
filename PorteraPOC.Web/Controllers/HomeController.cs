@@ -6,6 +6,7 @@ using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 using FluentValidation.Results;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using PorteraPOC.Business.Service;
 using PorteraPOC.Dto;
@@ -17,20 +18,24 @@ namespace PorteraPOC.Web.Controllers
     public class HomeController : BaseController
     {
         private readonly IPilotService _pilotService;
-        public HomeController(IPilotService pilotService)
+        private readonly IHttpContextAccessor _httpContext;
+        public HomeController(IPilotService pilotService, IHttpContextAccessor httpContext)
         {
             _pilotService = pilotService;
+            _httpContext = httpContext;
         }
         [HttpGet]
         public IActionResult Index()
         {
             return View();
         }
+
         [HttpGet]
-        public IActionResult ValidRequest(string param)
+        public IActionResult Ids(string res)
         {
-            return View("ValidRequest", param);
+            return View("Ids");
         }
+
         public IActionResult Failure()
         {
             return View();
@@ -43,22 +48,24 @@ namespace PorteraPOC.Web.Controllers
         [HttpGet]
         public IActionResult GetSerialWithId(string param)
         {
-            var redirectUrl = Startup.PublicConfiguration.GetSection("PorteraSettings:Url").Value;
             try
             {
-                var validateResult = ValidateParam(param);
-                if (validateResult.IsValid)
+                //must be 25 charachter
+                if (param.Length == 25)
                 {
-                    var response = GetPilotWithWatch(param);
-                    if (response.ResultCode == HttpStatusCode.NotFound)
+                    bool flag = GetIdFromParam(param);
+                    if (flag)
                     {
-                        Serilog.Log.Error(response.Message);
-                        return View("Failure", response.Message);
+                        return Redirect("~/"+param);
                     }
-                    return Redirect(redirectUrl + $"/{(response.Data as PilotDto).SerialNoWithId}");
+                    return View("Failure", "Id number doesn't exist on database");
                 }
-                Serilog.Log.Error(validateResult.Errors.FirstOrDefault().ErrorMessage);
-                return View("Failure", validateResult.Errors.FirstOrDefault().ErrorMessage);
+                else
+                {
+                    var validateResult = ValidateParam(param);
+                    Serilog.Log.Error(validateResult.Errors.FirstOrDefault().ErrorMessage);
+                    return View("Failure", validateResult.Errors.FirstOrDefault().ErrorMessage);
+                }
             }
             catch (Exception ex)
             {
@@ -66,6 +73,17 @@ namespace PorteraPOC.Web.Controllers
                 return View("Failure", ex.Message);
                 throw ex;
             }
+        }
+
+        private bool GetIdFromParam(string param)
+        {
+            var sn = param.Substring(0, 14);
+            var id = param.Substring(14, 11);
+            var response = _pilotService.GetById(id);
+            var dto = (response.Data as PilotDto);
+            if (dto != null && dto.SerialNumber == sn)
+                return true;
+            return false;
         }
 
         private ValidationResult ValidateParam(string param)
