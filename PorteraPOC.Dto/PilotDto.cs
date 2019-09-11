@@ -8,13 +8,13 @@ namespace PorteraPOC.Dto
         {
 
         }
-        public PilotDto(string id, Guid serialNumber)
+        public PilotDto(string id, string serialNumber)
         {
             SerialNoWithId = id + serialNumber;
         }
  
         public string Id { get; set; }
-        public Guid SerialNo { get; set; }
+        public string SerialNumber { get; set; }
         public string SerialNoWithId { get; set; }
 
     }

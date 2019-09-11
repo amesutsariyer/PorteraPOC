@@ -1,15 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
+
 using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
+using FluentValidation.Results;
 using Microsoft.AspNetCore.Mvc;
 using PorteraPOC.Business.Service;
 using PorteraPOC.Dto;
 using PorteraPOC.Dto.Validations;
 using PorteraPOC.Entity;
-
+using Serilog;
 namespace PorteraPOC.Web.Controllers
 {
     public class HomeController : BaseController
@@ -44,30 +46,45 @@ namespace PorteraPOC.Web.Controllers
             var redirectUrl = Startup.PublicConfiguration.GetSection("PorteraSettings:Url").Value;
             try
             {
-                PilotDto dto = new PilotDto();
-                PilotDtoValidation validator = new PilotDtoValidation();
-                dto.Id = param ?? "";
-
-                var validateResult = validator.Validate(dto);
+                var validateResult = ValidateParam(param);
                 if (validateResult.IsValid)
                 {
-                    var response = _pilotService.GetById(param);
+                    var response = GetPilotWithWatch(param);
                     if (response.ResultCode == HttpStatusCode.NotFound)
                     {
+                        Serilog.Log.Error(response.Message);
                         return View("Failure", response.Message);
                     }
-                    return Redirect(redirectUrl + $"?param={param = (response.Data as PilotDto).SerialNoWithId}");
-
-                    //   return RedirectToAction("ValidRequest", new { param = (response.Data as PilotDto).SerialNoWithId });
+                    return Redirect(redirectUrl + $"/{(response.Data as PilotDto).SerialNoWithId}");
                 }
-
+                Serilog.Log.Error(validateResult.Errors.FirstOrDefault().ErrorMessage);
                 return View("Failure", validateResult.Errors.FirstOrDefault().ErrorMessage);
             }
             catch (Exception ex)
             {
+                Serilog.Log.Error(ex.Message);
                 return View("Failure", ex.Message);
                 throw ex;
             }
+        }
+
+        private ValidationResult ValidateParam(string param)
+        {
+            PilotDto dto = new PilotDto();
+            PilotDtoValidation validator = new PilotDtoValidation();
+            dto.Id = param ?? "";
+            return validator.Validate(dto);
+        }
+
+        public Business.ServiceResult GetPilotWithWatch(string param)
+        {
+            var watch = Stopwatch.StartNew();
+
+            var response = _pilotService.GetById(param);
+            watch.Stop();
+            var elapsedMs = watch.ElapsedMilliseconds;
+            Serilog.Log.Information($"Parameter {param}.Serial number Found on database {elapsedMs}ms");
+            return response;
         }
     }
 }

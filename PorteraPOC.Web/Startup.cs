@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using AutoMapper;
+﻿using AutoMapper;
 using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -11,32 +7,34 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using PorteraPOC.Business;
 using PorteraPOC.Business.Manager;
 using PorteraPOC.Business.Service;
-using PorteraPOC.DataAccess;
 using PorteraPOC.DataAccess.Data;
 using PorteraPOC.DataAccess.Interface;
 using PorteraPOC.DataAccess.UnitOfWork;
 using PorteraPOC.Dto.Validations;
-using PorteraPOC.Entity;
 using Serilog;
 
 namespace PorteraPOC.Web
 {
     public class Startup
     {
-        public Startup(IConfiguration configuration)
-        {
-            Configuration = configuration;
-            Serilog.Log.Logger = new LoggerConfiguration()
-           .ReadFrom.Configuration(Configuration)
-           .CreateLogger();
-            PublicConfiguration = Configuration;
-
-        }
 
         public IConfiguration Configuration { get; }
+        public Startup(IHostingEnvironment environment)
+        {
+            Configuration = new ConfigurationBuilder()
+              .SetBasePath(environment.ContentRootPath)
+              //.AddJsonFile("appsettings.json", false, true)
+              .AddJsonFile($"appsettings.{environment.EnvironmentName}.json", true)
+              .AddEnvironmentVariables()
+              .Build();
+            PublicConfiguration = Configuration;
+        }
+
+        //public IConfiguration Configuration { get; }
         public static IConfiguration PublicConfiguration { get; set; }
 
         // This method gets called by the runtime. Use this method to add services to the container.
@@ -46,7 +44,7 @@ namespace PorteraPOC.Web
             services.AddDbContext<PorteraDbContext>(options =>
               options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection")));
 
-            services.AddLogging(loggingBuilder => loggingBuilder.AddSerilog(dispose: true));
+
 
             services.Configure<CookiePolicyOptions>(options =>
             {
@@ -70,7 +68,7 @@ namespace PorteraPOC.Web
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env)
+        public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory)
         {
             if (env.IsDevelopment())
             {
@@ -83,12 +81,21 @@ namespace PorteraPOC.Web
 
             app.UseStaticFiles();
             app.UseCookiePolicy();
-
+            loggerFactory.AddSerilog();
             app.UseMvc(routes =>
             {
                 routes.MapRoute(
-                    name: "default",
-                    template: "{controller=Home}/{action=Index}/{id?}");
+             name: "default",
+             template: "{controller=Home}/{action=Index}/{id?}");
+
+                routes.MapRoute(
+                   name: "GetSerialWithId",
+                   template: "/{param?}",
+                   defaults: new { controller = "Home", action = "GetSerialWithId" },
+                   constraints: null,
+                   dataTokens: new { actionName = "" });
+
+
             });
         }
     }

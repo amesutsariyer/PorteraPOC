@@ -2,10 +2,10 @@
 
 namespace PorteraPOC.Entity
 {
-    public class Pilot : BaseEntity, IKey<string>
+    public class Pilot :IKey<string>
     {
         public string Id { get; set; }
-        public Guid SerialNumber { get; set; }
+        public string SerialNumber { get; set; }
     }
 }
 
