@@ -1,18 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-
-using System.Diagnostics;
-using System.Linq;
-using System.Net;
-using System.Threading.Tasks;
-using FluentValidation.Results;
+﻿using FluentValidation.Results;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using PorteraPOC.Business.Service;
 using PorteraPOC.Dto;
 using PorteraPOC.Dto.Validations;
-using PorteraPOC.Entity;
-using Serilog;
+using System;
+using System.Diagnostics;
+using System.Linq;
 namespace PorteraPOC.Web.Controllers
 {
     public class HomeController : BaseController
@@ -33,7 +27,19 @@ namespace PorteraPOC.Web.Controllers
         [HttpGet]
         public IActionResult Ids(string res)
         {
-            return View("Ids");
+            if (res.Length == 25)
+            {
+                bool flag = GetIdFromParam(res);
+                if (flag)
+                {
+                    return View("Ids");
+                }
+                return View("Failure", "Id number doesn't exist on database");
+            }
+            else
+            {
+                return View("Failure", "Invalid Request");
+            }
         }
 
         public IActionResult Failure()
@@ -56,7 +62,7 @@ namespace PorteraPOC.Web.Controllers
                     bool flag = GetIdFromParam(param);
                     if (flag)
                     {
-                        return Redirect("~/"+param);
+                        return Redirect("~/" + param);
                     }
                     return View("Failure", "Id number doesn't exist on database");
                 }
