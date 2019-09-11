@@ -46,58 +46,16 @@ namespace PorteraPOC.Web.Controllers
         {
             return View();
         }
-        /// <summary>
-        /// This method generate query string with param
-        /// </summary>
-        /// <param name="param"></param>
-        /// <returns></returns>
-        [HttpGet]
-        public IActionResult GetSerialWithId(string param)
-        {
-            try
-            {
-                //must be 25 charachter
-                if (param.Length == 25)
-                {
-                    bool flag = GetIdFromParam(param);
-                    if (flag)
-                    {
-                        return Redirect("~/" + param);
-                    }
-                    return View("Failure", "Id number doesn't exist on database");
-                }
-                else
-                {
-                    var validateResult = ValidateParam(param);
-                    Serilog.Log.Error(validateResult.Errors.FirstOrDefault().ErrorMessage);
-                    return View("Failure", validateResult.Errors.FirstOrDefault().ErrorMessage);
-                }
-            }
-            catch (Exception ex)
-            {
-                Serilog.Log.Error(ex.Message);
-                return View("Failure", ex.Message);
-                throw ex;
-            }
-        }
 
         private bool GetIdFromParam(string param)
         {
             var sn = param.Substring(0, 14);
             var id = param.Substring(14, 11);
-            var response = _pilotService.GetById(id);
+            var response = GetPilotWithWatch(id);
             var dto = (response.Data as PilotDto);
             if (dto != null && dto.SerialNumber == sn)
                 return true;
             return false;
-        }
-
-        private ValidationResult ValidateParam(string param)
-        {
-            PilotDto dto = new PilotDto();
-            PilotDtoValidation validator = new PilotDtoValidation();
-            dto.Id = param ?? "";
-            return validator.Validate(dto);
         }
 
         public Business.ServiceResult GetPilotWithWatch(string param)
